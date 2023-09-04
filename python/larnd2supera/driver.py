@@ -84,7 +84,7 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
 
         # Event separator default value needs to be set.
         # We repurpose "run_config" of EventParser to hold this attribute.
-        self._run_config['event_separator'] = 'eventID'
+        self._run_config['event_separator'] = 'event_id'
         # Apply run config modification if requested
         run_config_mod = cfg_dict.get('ParserRunConfig',None)
         if run_config_mod:
@@ -150,7 +150,7 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
         
         # 1. Loop over trajectories, create one supera::ParticleInput for each
         #    store particle inputs in list to fill parent information later
-        max_trackid = max(data.trajectories['trackID'].max(),data.segments['trackID'].max())
+        max_trackid = max(data.trajectories['traj_id'].max(),data.segments['segment_id'].max())
         self._trackid2idx.resize(int(max_trackid+1),supera.kINVALID_INDEX)
         for traj in data.trajectories:
             # print("traj",traj)
@@ -166,10 +166,10 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
                     print('  TrackID',part_input.part.trackid,
                           'PDG',part_input.part.pdg,
                           'Energy',part_input.part.energy_init)
-            if traj['trackID'] < 0:
-                print('Negative track ID found',traj['trackID'])
+            if traj['traj_id'] < 0:
+                print('Negative track ID found',traj['traj_id'])
                 raise ValueError
-            self._trackid2idx[int(traj['trackID'])] = part_input.part.id
+            self._trackid2idx[int(traj['traj_id'])] = part_input.part.id
             supera_event.push_back(part_input)
             
         if verbose:
@@ -329,7 +329,7 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
             if verbose:
                 print('[INFO] Assessing packet',ip)
                 print('       Segments :', packet_segments)
-                print('       TrackIDs :', [data.segments[packet_segments[idx]]['trackID'] for idx in range(packet_segments.shape[0])])
+                print('       TrackIDs :', [data.segments[packet_segments[idx]]['segment_id'] for idx in range(packet_segments.shape[0])])
                 print('       Fractions:', ['%.3f' % f for f in packet_fractions])
                 print('       Energy   : %.3f' % dE[ip])
                 print('       Position :', ['%.3f' % f for f in [x[ip]*self._mm2cm,y[ip]*self._mm2cm,z[ip]*self._mm2cm]])
@@ -362,7 +362,7 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
                 seg = data.segments[seg_idx]
                 packet_edeps[it].dedx = seg['dEdx']
                 packet_edeps[it].e = dE[ip]
-                supera_event[self._trackid2idx[int(seg['trackID'])]].pcloud.push_back(packet_edeps[it])
+                supera_event[self._trackid2idx[int(seg['segment_id'])]].pcloud.push_back(packet_edeps[it])
                 check_ana_sum += packet_edeps[it].e
                 continue
 
@@ -413,7 +413,7 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
                 seg = data.segments[seg_idx]
                 packet_edeps[it].dedx = seg['dEdx']
                 packet_edeps[it].e = dE[ip]
-                supera_event[self._trackid2idx[int(seg['trackID'])]].pcloud.push_back(packet_edeps[it])
+                supera_event[self._trackid2idx[int(seg['segment_id'])]].pcloud.push_back(packet_edeps[it])
                 check_ana_sum += packet_edeps[it].e
                 continue
 
@@ -426,7 +426,10 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
                 seg = data.segments[seg_idx]
                 packet_edeps[it].dedx = seg['dEdx']
                 packet_edeps[it].e = dE[ip] * abs(packet_fractions[it]) * frac_norm
-                supera_event[self._trackid2idx[int(seg['trackID'])]].pcloud.push_back(packet_edeps[it])
+                print("int(seg['segment_id'])]: ", int(seg['segment_id']))
+                print(self._trackid2idx[int(seg['segment_id'])])
+                print(len(supera_event))
+                supera_event[self._trackid2idx[int(seg['segment_id'])]].pcloud.push_back(packet_edeps[it])
                 if verbose:
                     print('[INFO] Registered segment',seg_idx)
                 check_ana_sum += packet_edeps[it].e
@@ -467,10 +470,10 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
         # Larnd-sim stores a lot of these fields as numpy.uint32, 
         # but Supera/LArCV want a regular int, hence the type casting
         # TODO Is there a cleaner way to handle this?
-        p.id             = int(trajectory['eventID'])
+        p.id             = int(trajectory['event_id'])
         #p.interaction_id = trajectory['interactionID']
-        p.trackid        = int(trajectory['trackID'])
-        p.pdg            = int(trajectory['pdgId'])
+        p.trackid        = int(trajectory['traj_id'])
+        p.pdg            = int(trajectory['pdg_id'])
         p.px = trajectory['pxyz_start'][0] 
         p.py = trajectory['pxyz_start'][1] 
         p.pz = trajectory['pxyz_start'][2]
@@ -486,11 +489,11 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
                                  trajectory['t_end']
         )
 
-        traj_parent_id = trajectory['parentID']
+        traj_parent_id = trajectory['parent_id']
         # This now causes errors?
         #if traj_parent_id == -1: p.parent_trackid = supera.kINVALID_TRACKID
         if traj_parent_id == -1: p.parent_trackid = p.trackid
-        else:                    p.parent_trackid = int(trajectory['parentID'])
+        else:                    p.parent_trackid = int(trajectory['parent_id'])
 
         if supera.kINVALID_TRACKID in [p.trackid, p.parent_trackid]:
             print('Unexpected to have an invalid track ID',p.trackid,

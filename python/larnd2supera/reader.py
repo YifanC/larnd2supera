@@ -71,7 +71,7 @@ class InputReader:
                 self._is_sim = 'mc_packets_assn' in fin.keys()
                 if self._is_sim:
                     mc_packets_assn.append(fin['mc_packets_assn'][:])
-                    segments.append(fin['tracks'][:])
+                    segments.append(fin['segments'][:])
                     trajectories.append(fin['trajectories'][:])
                     vertices.append(fin['vertices'][:])
                     if verbose: print('Read-in:',f)
@@ -87,7 +87,7 @@ class InputReader:
         self._vertices = np.concatenate(vertices)
         
         # create mapping
-        self._packet2event = EventParser.packet_to_eventid(self._mc_packets_assn, self._segments, self._vertices)
+        self._packet2event = EventParser.packet_to_eventid(self._mc_packets_assn, self._segments, self._run_config['event_separator'])
         
         packet_mask = self._packet2event != -1
         ctr_packet  = len(self._packets)
@@ -135,8 +135,8 @@ class InputReader:
     def CheckIntegrity(self,data,fix_association=False):
 
         flag = True
-        tid_range0 = np.array([t['trackID'] for t in data.trajectories])
-        tid_range1 = np.array([s['trackID'] for s in data.segments    ])
+        tid_range0 = np.array([t['traj_id'] for t in data.trajectories])
+        tid_range1 = np.array([s['segment_id'] for s in data.segments    ])
 
         if tid_range0.max() < tid_range1.max():
             print('[ERROR] Max Track ID in the segments exceeds the maximum of the trajectories')
@@ -196,7 +196,7 @@ class InputReader:
         result.event_separator = self._run_config['event_separator']
         
         result.event_id = self._event_ids[index]
-        result.t0 = self._event_t0s[result.event_id]
+        result.t0 = self._event_t0s[index]
 
         mask = self._packet2event == result.event_id
         
