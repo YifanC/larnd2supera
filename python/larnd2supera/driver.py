@@ -480,7 +480,7 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
         # but Supera/LArCV want a regular int, hence the type casting
         # TODO Is there a cleaner way to handle this?
         p.id             = int(trajectory['event_id'])
-        #p.interaction_id = trajectory['interactionID']
+        p.interaction_id = int(trajectory['vertex_id'])   # this is the VertexID assigned at edep-sim stage
         p.trackid        = int(trajectory['traj_id'])
         p.pdg            = int(trajectory['pdg_id'])
         p.px = trajectory['pxyz_start'][0] 
