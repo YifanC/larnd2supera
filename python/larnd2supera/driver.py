@@ -482,6 +482,8 @@ class SuperaDriver(edep2supera.edep2supera.SuperaDriver):
         p.id             = int(trajectory['event_id'])
         p.interaction_id = int(trajectory['vertex_id'])   # this is the VertexID assigned at edep-sim stage
         p.trackid        = int(trajectory['traj_id'])
+        if hasattr(p, "genid") and trajectory["parent_id"] < 0:   # < 0 indicates a top-level particle (from GENIE)
+            p.genid          = int(trajectory['local_traj_id'])
         p.pdg            = int(trajectory['pdg_id'])
         p.px = trajectory['pxyz_start'][0] 
         p.py = trajectory['pxyz_start'][1] 
